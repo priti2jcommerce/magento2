@@ -35,7 +35,7 @@ class OnepageTest extends \PHPUnit\Framework\TestCase
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $serializerMock;
+    private $serializer;
 
     protected function setUp()
     {
@@ -49,7 +49,7 @@ class OnepageTest extends \PHPUnit\Framework\TestCase
             \Magento\Checkout\Block\Checkout\LayoutProcessorInterface::class
         );
 
-        $this->serializerMock = $this->createMock(\Magento\Framework\Serialize\Serializer\JsonHexTag::class);
+        $this->serializer = $this->createMock(\Magento\Framework\Serialize\Serializer\Json::class);
 
         $this->model = new \Magento\Checkout\Block\Onepage(
             $contextMock,
@@ -57,8 +57,7 @@ class OnepageTest extends \PHPUnit\Framework\TestCase
             $this->configProviderMock,
             [$this->layoutProcessorMock],
             [],
-            $this->serializerMock,
-            $this->serializerMock
+            $this->serializer
         );
     }
 
@@ -94,7 +93,6 @@ class OnepageTest extends \PHPUnit\Framework\TestCase
         $processedLayout = ['layout' => ['processed' => true]];
         $jsonLayout = '{"layout":{"processed":true}}';
         $this->layoutProcessorMock->expects($this->once())->method('process')->with([])->willReturn($processedLayout);
-        $this->serializerMock->expects($this->once())->method('serialize')->willReturn($jsonLayout);
 
         $this->assertEquals($jsonLayout, $this->model->getJsLayout());
     }
@@ -103,7 +101,6 @@ class OnepageTest extends \PHPUnit\Framework\TestCase
     {
         $checkoutConfig = ['checkout', 'config'];
         $this->configProviderMock->expects($this->once())->method('getConfig')->willReturn($checkoutConfig);
-        $this->serializerMock->expects($this->once())->method('serialize')->willReturn(json_encode($checkoutConfig));
 
         $this->assertEquals(json_encode($checkoutConfig), $this->model->getSerializedCheckoutConfig());
     }

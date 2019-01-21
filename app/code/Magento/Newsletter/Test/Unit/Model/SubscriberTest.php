@@ -209,11 +209,6 @@ class SubscriberTest extends \PHPUnit\Framework\TestCase
         $this->assertEquals(Subscriber::STATUS_NOT_ACTIVE, $this->subscriber->subscribe($email));
     }
 
-    /**
-     * Update status with Confirmation Status - required.
-     *
-     * @return void
-     */
     public function testUpdateSubscription()
     {
         $websiteId = 1;
@@ -230,7 +225,7 @@ class SubscriberTest extends \PHPUnit\Framework\TestCase
             ->willReturn(
                 [
                     'subscriber_id' => 1,
-                    'subscriber_status' => Subscriber::STATUS_SUBSCRIBED,
+                    'subscriber_status' => Subscriber::STATUS_SUBSCRIBED
                 ]
             );
         $customerDataMock->expects($this->atLeastOnce())->method('getId')->willReturn('id');
@@ -250,9 +245,8 @@ class SubscriberTest extends \PHPUnit\Framework\TestCase
             ->getMock();
         $this->storeManager->expects($this->any())->method('getStore')->willReturn($storeModel);
         $storeModel->expects($this->exactly(2))->method('getWebsiteId')->willReturn($websiteId);
-        $data = $this->subscriber->updateSubscription($customerId);
 
-        $this->assertEquals(Subscriber::STATUS_SUBSCRIBED, $data->getSubscriberStatus());
+        $this->assertEquals($this->subscriber, $this->subscriber->updateSubscription($customerId));
     }
 
     public function testUnsubscribeCustomerById()

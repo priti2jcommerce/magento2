@@ -376,8 +376,7 @@ define([
                 basePrice = parseFloat(this.options.spConfig.prices.basePrice.amount),
                 optionFinalPrice,
                 optionPriceDiff,
-                optionPrices = this.options.spConfig.optionPrices,
-                allowedProductMinPrice;
+                optionPrices = this.options.spConfig.optionPrices;
 
             this._clearSelect(element);
             element.options[0] = new Option('', '');
@@ -408,8 +407,8 @@ define([
 
                         if (typeof allowedProducts[0] !== 'undefined' &&
                             typeof optionPrices[allowedProducts[0]] !== 'undefined') {
-                            allowedProductMinPrice = this._getAllowedProductWithMinPrice(allowedProducts);
-                            optionFinalPrice = parseFloat(optionPrices[allowedProductMinPrice].finalPrice.amount);
+
+                            optionFinalPrice = parseFloat(optionPrices[allowedProducts[0]].finalPrice.amount);
                             optionPriceDiff = optionFinalPrice - basePrice;
 
                             if (optionPriceDiff !== 0) {
@@ -490,27 +489,36 @@ define([
         _getPrices: function () {
             var prices = {},
                 elements = _.toArray(this.options.settings),
-                allowedProduct;
+                hasProductPrice = false,
+                optionPriceDiff = 0,
+                allowedProduct, optionPrices, basePrice, optionFinalPrice;
 
             _.each(elements, function (element) {
                 var selected = element.options[element.selectedIndex],
                     config = selected && selected.config,
                     priceValue = {};
 
-                if (config && config.allowedProducts.length === 1) {
+                if (config && config.allowedProducts.length === 1 && !hasProductPrice) {
+                    prices = {};
                     priceValue = this._calculatePrice(config);
+                    hasProductPrice = true;
                 } else if (element.value) {
                     allowedProduct = this._getAllowedProductWithMinPrice(config.allowedProducts);
-                    priceValue = this._calculatePrice({
-                        'allowedProducts': [
-                            allowedProduct
-                        ]
-                    });
+                    optionPrices = this.options.spConfig.optionPrices;
+                    basePrice = parseFloat(this.options.spConfig.prices.basePrice.amount);
+
+                    if (!_.isEmpty(allowedProduct)) {
+                        optionFinalPrice = parseFloat(optionPrices[allowedProduct].finalPrice.amount);
+                        optionPriceDiff = optionFinalPrice - basePrice;
+                    }
+
+                    if (optionPriceDiff !== 0) {
+                        prices = {};
+                        priceValue = this._calculatePriceDifference(allowedProduct);
+                    }
                 }
 
-                if (!_.isEmpty(priceValue)) {
-                    prices.prices = priceValue;
-                }
+                prices[element.attributeId] = priceValue;
             }, this);
 
             return prices;
@@ -531,13 +539,38 @@ define([
             _.each(allowedProducts, function (allowedProduct) {
                 optionFinalPrice = parseFloat(optionPrices[allowedProduct].finalPrice.amount);
 
-                if (_.isEmpty(product) || optionFinalPrice < optionMinPrice) {
+                if (_.isEmpty(product)) {
                     optionMinPrice = optionFinalPrice;
+                    product = allowedProduct;
+                }
+
+                if (optionFinalPrice < optionMinPrice) {
                     product = allowedProduct;
                 }
             }, this);
 
             return product;
+        },
+
+        /**
+         * Calculate price difference for allowed product
+         *
+         * @param {*} allowedProduct - Product
+         * @returns {*}
+         * @private
+         */
+        _calculatePriceDifference: function (allowedProduct) {
+            var displayPrices = $(this.options.priceHolderSelector).priceBox('option').prices,
+                newPrices = this.options.spConfig.optionPrices[allowedProduct];
+
+            _.each(displayPrices, function (price, code) {
+
+                if (newPrices[code]) {
+                    displayPrices[code].amount = newPrices[code].amount - displayPrices[code].amount;
+                }
+            });
+
+            return displayPrices;
         },
 
         /**

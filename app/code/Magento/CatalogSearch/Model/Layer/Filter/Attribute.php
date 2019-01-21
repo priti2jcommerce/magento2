@@ -91,10 +91,12 @@ class Attribute extends AbstractFilter
             return $this->itemDataBuilder->build();
         }
 
+        $productSize = $productCollection->getSize();
+
         $options = $attribute->getFrontend()
             ->getSelectOptions();
         foreach ($options as $option) {
-            $this->buildOptionData($option, $isAttributeFilterable, $optionsFacetedData);
+            $this->buildOptionData($option, $isAttributeFilterable, $optionsFacetedData, $productSize);
         }
 
         return $this->itemDataBuilder->build();
@@ -106,16 +108,17 @@ class Attribute extends AbstractFilter
      * @param array $option
      * @param boolean $isAttributeFilterable
      * @param array $optionsFacetedData
+     * @param int $productSize
      * @return void
      */
-    private function buildOptionData($option, $isAttributeFilterable, $optionsFacetedData)
+    private function buildOptionData($option, $isAttributeFilterable, $optionsFacetedData, $productSize)
     {
         $value = $this->getOptionValue($option);
         if ($value === false) {
             return;
         }
         $count = $this->getOptionCount($value, $optionsFacetedData);
-        if ($isAttributeFilterable && $count === 0) {
+        if ($isAttributeFilterable && (!$this->isOptionReducesResults($count, $productSize) || $count === 0)) {
             return;
         }
 

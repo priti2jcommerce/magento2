@@ -5,183 +5,138 @@
  */
 namespace Magento\Config\Test\Unit\Model;
 
-use PHPUnit_Framework_MockObject_MockObject as MockObject;
-use Magento\Config\Model\Config;
-use Magento\Framework\App\Config\ReinitableConfigInterface;
-use Magento\Framework\Event\ManagerInterface;
-use Magento\Config\Model\Config\Structure\Reader;
-use Magento\Framework\DB\TransactionFactory;
-use Magento\Config\Model\Config\Loader;
-use Magento\Framework\App\Config\ValueFactory;
-use Magento\Store\Model\StoreManagerInterface;
-use Magento\Config\Model\Config\Structure;
-use Magento\Config\Model\Config\Reader\Source\Deployed\SettingChecker;
-use Magento\Framework\App\ScopeResolverPool;
-use Magento\Framework\App\ScopeResolverInterface;
-use Magento\Framework\App\ScopeInterface;
-use Magento\Store\Model\ScopeTypeNormalizer;
-use Magento\Framework\DB\Transaction;
-use Magento\Framework\App\Config\Value;
-use Magento\Store\Model\Website;
-use Magento\Config\Model\Config\Structure\Element\Group;
-use Magento\Config\Model\Config\Structure\Element\Field;
-
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ConfigTest extends \PHPUnit\Framework\TestCase
 {
     /**
-     * @var Config
+     * @var \Magento\Config\Model\Config
      */
-    private $model;
+    protected $_model;
 
     /**
-     * @var ManagerInterface|MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $eventManagerMock;
+    protected $_eventManagerMock;
 
     /**
-     * @var Reader|MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $structureReaderMock;
+    protected $_structureReaderMock;
 
     /**
-     * @var TransactionFactory|MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $transFactoryMock;
+    protected $_transFactoryMock;
 
     /**
-     * @var ReinitableConfigInterface|MockObject
+     * @var \Magento\Framework\App\Config\ReinitableConfigInterface|\PHPUnit_Framework_MockObject_MockObject
      */
-    private $appConfigMock;
+    protected $_appConfigMock;
 
     /**
-     * @var Loader|MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $configLoaderMock;
+    protected $_applicationMock;
 
     /**
-     * @var ValueFactory|MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $dataFactoryMock;
+    protected $_configLoaderMock;
 
     /**
-     * @var StoreManagerInterface|MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $storeManager;
+    protected $_dataFactoryMock;
 
     /**
-     * @var Structure|MockObject
+     * @var \Magento\Store\Model\StoreManagerInterface
      */
-    private $configStructure;
+    protected $_storeManager;
 
     /**
-     * @var SettingChecker|MockObject
+     * @var \Magento\Config\Model\Config\Structure
      */
-    private $settingsChecker;
+    protected $_configStructure;
 
     /**
-     * @var ScopeResolverPool|MockObject
+     * @var \PHPUnit_Framework_MockObject_MockObject
      */
-    private $scopeResolverPool;
-
-    /**
-     * @var ScopeResolverInterface|MockObject
-     */
-    private $scopeResolver;
-
-    /**
-     * @var ScopeInterface|MockObject
-     */
-    private $scope;
-
-    /**
-     * @var ScopeTypeNormalizer|MockObject
-     */
-    private $scopeTypeNormalizer;
+    private $_settingsChecker;
 
     protected function setUp()
     {
-        $this->eventManagerMock = $this->createMock(ManagerInterface::class);
-        $this->structureReaderMock = $this->createPartialMock(
-            Reader::class,
+        $this->_eventManagerMock = $this->createMock(\Magento\Framework\Event\ManagerInterface::class);
+        $this->_structureReaderMock = $this->createPartialMock(
+            \Magento\Config\Model\Config\Structure\Reader::class,
             ['getConfiguration']
         );
-        $this->configStructure = $this->createMock(Structure::class);
+        $this->_configStructure = $this->createMock(\Magento\Config\Model\Config\Structure::class);
 
-        $this->structureReaderMock->method('getConfiguration')
-            ->willReturn($this->configStructure);
+        $this->_structureReaderMock->expects(
+            $this->any()
+        )->method(
+            'getConfiguration'
+        )->will(
+            $this->returnValue($this->_configStructure)
+        );
 
-        $this->transFactoryMock = $this->createPartialMock(
-            TransactionFactory::class,
+        $this->_transFactoryMock = $this->createPartialMock(
+            \Magento\Framework\DB\TransactionFactory::class,
             ['create', 'addObject']
         );
-        $this->appConfigMock = $this->createMock(ReinitableConfigInterface::class);
-        $this->configLoaderMock = $this->createPartialMock(
-            Loader::class,
+        $this->_appConfigMock = $this->createMock(\Magento\Framework\App\Config\ReinitableConfigInterface::class);
+        $this->_configLoaderMock = $this->createPartialMock(
+            \Magento\Config\Model\Config\Loader::class,
             ['getConfigByPath']
         );
-        $this->dataFactoryMock = $this->createMock(ValueFactory::class);
+        $this->_dataFactoryMock = $this->createMock(\Magento\Framework\App\Config\ValueFactory::class);
 
-        $this->storeManager = $this->createMock(StoreManagerInterface::class);
+        $this->_storeManager = $this->getMockForAbstractClass(\Magento\Store\Model\StoreManagerInterface::class);
 
-        $this->settingsChecker = $this->createMock(SettingChecker::class);
+        $this->_settingsChecker = $this
+            ->createMock(\Magento\Config\Model\Config\Reader\Source\Deployed\SettingChecker::class);
 
-        $this->scopeResolverPool = $this->createMock(ScopeResolverPool::class);
-        $this->scopeResolver = $this->createMock(ScopeResolverInterface::class);
-        $this->scopeResolverPool->method('get')
-            ->willReturn($this->scopeResolver);
-        $this->scope = $this->createMock(ScopeInterface::class);
-        $this->scopeResolver->method('getScope')
-            ->willReturn($this->scope);
-
-        $this->scopeTypeNormalizer = $this->createMock(ScopeTypeNormalizer::class);
-
-        $this->model = new Config(
-            $this->appConfigMock,
-            $this->eventManagerMock,
-            $this->configStructure,
-            $this->transFactoryMock,
-            $this->configLoaderMock,
-            $this->dataFactoryMock,
-            $this->storeManager,
-            $this->settingsChecker,
-            [],
-            $this->scopeResolverPool,
-            $this->scopeTypeNormalizer
+        $this->_model = new \Magento\Config\Model\Config(
+            $this->_appConfigMock,
+            $this->_eventManagerMock,
+            $this->_configStructure,
+            $this->_transFactoryMock,
+            $this->_configLoaderMock,
+            $this->_dataFactoryMock,
+            $this->_storeManager,
+            $this->_settingsChecker
         );
     }
 
     public function testSaveDoesNotDoAnythingIfGroupsAreNotPassed()
     {
-        $this->configLoaderMock->expects($this->never())->method('getConfigByPath');
-        $this->model->save();
+        $this->_configLoaderMock->expects($this->never())->method('getConfigByPath');
+        $this->_model->save();
     }
 
     public function testSaveEmptiesNonSetArguments()
     {
-        $this->structureReaderMock->expects($this->never())->method('getConfiguration');
-        $this->assertNull($this->model->getSection());
-        $this->assertNull($this->model->getWebsite());
-        $this->assertNull($this->model->getStore());
-        $this->model->save();
-        $this->assertSame('', $this->model->getSection());
-        $this->assertSame('', $this->model->getWebsite());
-        $this->assertSame('', $this->model->getStore());
+        $this->_structureReaderMock->expects($this->never())->method('getConfiguration');
+        $this->assertNull($this->_model->getSection());
+        $this->assertNull($this->_model->getWebsite());
+        $this->assertNull($this->_model->getStore());
+        $this->_model->save();
+        $this->assertSame('', $this->_model->getSection());
+        $this->assertSame('', $this->_model->getWebsite());
+        $this->assertSame('', $this->_model->getStore());
     }
 
     public function testSaveToCheckAdminSystemConfigChangedSectionEvent()
     {
-        $transactionMock = $this->createMock(Transaction::class);
+        $transactionMock = $this->createMock(\Magento\Framework\DB\Transaction::class);
 
-        $this->transFactoryMock->method('create')
-            ->willReturn($transactionMock);
+        $this->_transFactoryMock->expects($this->any())->method('create')->will($this->returnValue($transactionMock));
 
-        $this->configLoaderMock->method('getConfigByPath')
-            ->willReturn([]);
+        $this->_configLoaderMock->expects($this->any())->method('getConfigByPath')->will($this->returnValue([]));
 
-        $this->eventManagerMock->expects(
+        $this->_eventManagerMock->expects(
             $this->at(0)
         )->method(
             'dispatch'
@@ -190,7 +145,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
             $this->arrayHasKey('website')
         );
 
-        $this->eventManagerMock->expects(
+        $this->_eventManagerMock->expects(
             $this->at(0)
         )->method(
             'dispatch'
@@ -199,147 +154,123 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
             $this->arrayHasKey('store')
         );
 
-        $this->model->setGroups(['1' => ['data']]);
-        $this->model->save();
+        $this->_model->setGroups(['1' => ['data']]);
+        $this->_model->save();
     }
 
     public function testDoNotSaveReadOnlyFields()
     {
-        $transactionMock = $this->createMock(Transaction::class);
-        $this->transFactoryMock->method('create')
-            ->willReturn($transactionMock);
+        $transactionMock = $this->createMock(\Magento\Framework\DB\Transaction::class);
+        $this->_transFactoryMock->expects($this->any())->method('create')->will($this->returnValue($transactionMock));
 
-        $this->settingsChecker->method('isReadOnly')
-            ->willReturn(true);
-        $this->configLoaderMock->method('getConfigByPath')
-            ->willReturn([]);
+        $this->_settingsChecker->expects($this->any())->method('isReadOnly')->will($this->returnValue(true));
+        $this->_configLoaderMock->expects($this->any())->method('getConfigByPath')->will($this->returnValue([]));
 
-        $this->model->setGroups(['1' => ['fields' => ['key' => ['data']]]]);
-        $this->model->setSection('section');
+        $this->_model->setGroups(['1' => ['fields' => ['key' => ['data']]]]);
+        $this->_model->setSection('section');
 
-        $group = $this->createMock(Group::class);
-        $group->method('getPath')
-            ->willReturn('section/1');
+        $group = $this->createMock(\Magento\Config\Model\Config\Structure\Element\Group::class);
+        $group->method('getPath')->willReturn('section/1');
 
-        $field = $this->createMock(Field::class);
-        $field->method('getGroupPath')
-            ->willReturn('section/1');
-        $field->method('getId')
-            ->willReturn('key');
+        $field = $this->createMock(\Magento\Config\Model\Config\Structure\Element\Field::class);
+        $field->method('getGroupPath')->willReturn('section/1');
+        $field->method('getId')->willReturn('key');
 
-        $this->configStructure->expects($this->at(0))
+        $this->_configStructure->expects($this->at(0))
             ->method('getElement')
             ->with('section/1')
-            ->willReturn($group);
-        $this->configStructure->expects($this->at(1))
+            ->will($this->returnValue($group));
+        $this->_configStructure->expects($this->at(1))
             ->method('getElement')
             ->with('section/1')
-            ->willReturn($group);
-        $this->configStructure->expects($this->at(2))
+            ->will($this->returnValue($group));
+        $this->_configStructure->expects($this->at(2))
             ->method('getElement')
             ->with('section/1/key')
-            ->willReturn($field);
+            ->will($this->returnValue($field));
 
         $backendModel = $this->createPartialMock(
-            Value::class,
+            \Magento\Framework\App\Config\Value::class,
             ['addData']
         );
-        $this->dataFactoryMock->method('create')
-            ->willReturn($backendModel);
+        $this->_dataFactoryMock->expects($this->any())->method('create')->will($this->returnValue($backendModel));
 
-        $this->transFactoryMock->expects($this->never())
-            ->method('addObject');
-        $backendModel->expects($this->never())
-            ->method('addData');
+        $this->_transFactoryMock->expects($this->never())->method('addObject');
+        $backendModel->expects($this->never())->method('addData');
 
-        $this->model->save();
+        $this->_model->save();
     }
 
     public function testSaveToCheckScopeDataSet()
     {
-        $transactionMock = $this->createMock(Transaction::class);
-        $this->transFactoryMock->method('create')
-            ->willReturn($transactionMock);
+        $transactionMock = $this->createMock(\Magento\Framework\DB\Transaction::class);
+        $this->_transFactoryMock->expects($this->any())->method('create')->will($this->returnValue($transactionMock));
 
-        $this->configLoaderMock->method('getConfigByPath')
-            ->willReturn([]);
+        $this->_configLoaderMock->expects($this->any())->method('getConfigByPath')->will($this->returnValue([]));
 
-        $this->eventManagerMock->expects($this->at(0))
+        $this->_eventManagerMock->expects($this->at(0))
             ->method('dispatch')
             ->with(
                 $this->equalTo('admin_system_config_changed_section_section'),
                 $this->arrayHasKey('website')
             );
-        $this->eventManagerMock->expects($this->at(0))
+        $this->_eventManagerMock->expects($this->at(0))
             ->method('dispatch')
             ->with(
                 $this->equalTo('admin_system_config_changed_section_section'),
                 $this->arrayHasKey('store')
             );
 
-        $group = $this->createMock(Group::class);
+        $group = $this->createMock(\Magento\Config\Model\Config\Structure\Element\Group::class);
         $group->method('getPath')->willReturn('section/1');
 
-        $field = $this->createMock(Field::class);
+        $field = $this->createMock(\Magento\Config\Model\Config\Structure\Element\Field::class);
         $field->method('getGroupPath')->willReturn('section/1');
         $field->method('getId')->willReturn('key');
 
-        $this->configStructure->expects($this->at(0))
+        $this->_configStructure->expects($this->at(0))
             ->method('getElement')
             ->with('section/1')
-            ->willReturn($group);
-        $this->configStructure->expects($this->at(1))
+            ->will($this->returnValue($group));
+        $this->_configStructure->expects($this->at(1))
             ->method('getElement')
             ->with('section/1')
-            ->willReturn($group);
-        $this->configStructure->expects($this->at(2))
+            ->will($this->returnValue($group));
+        $this->_configStructure->expects($this->at(2))
             ->method('getElement')
             ->with('section/1/key')
-            ->willReturn($field);
-        $this->configStructure->expects($this->at(3))
+            ->will($this->returnValue($field));
+        $this->_configStructure->expects($this->at(3))
             ->method('getElement')
             ->with('section/1')
-            ->willReturn($group);
-        $this->configStructure->expects($this->at(4))
+            ->will($this->returnValue($group));
+        $this->_configStructure->expects($this->at(4))
             ->method('getElement')
             ->with('section/1/key')
-            ->willReturn($field);
+            ->will($this->returnValue($field));
 
-        $this->scopeResolver->method('getScope')
-            ->with('1')
-            ->willReturn($this->scope);
-        $this->scope->expects($this->atLeastOnce())
-            ->method('getScopeType')
-            ->willReturn('website');
-        $this->scope->expects($this->atLeastOnce())
-            ->method('getId')
-            ->willReturn(1);
-        $this->scope->expects($this->atLeastOnce())
-            ->method('getCode')
-            ->willReturn('website_code');
-        $this->scopeTypeNormalizer->expects($this->atLeastOnce())
-            ->method('normalize')
-            ->with('website')
-            ->willReturn('websites');
-        $website = $this->createMock(Website::class);
-        $this->storeManager->method('getWebsites')->willReturn([$website]);
-        $this->storeManager->method('isSingleStoreMode')->willReturn(true);
+        $website = $this->createMock(\Magento\Store\Model\Website::class);
+        $website->expects($this->any())->method('getCode')->will($this->returnValue('website_code'));
+        $this->_storeManager->expects($this->any())->method('getWebsite')->will($this->returnValue($website));
+        $this->_storeManager->expects($this->any())->method('getWebsites')->will($this->returnValue([$website]));
+        $this->_storeManager->expects($this->any())->method('isSingleStoreMode')->will($this->returnValue(true));
 
-        $this->model->setWebsite('1');
-        $this->model->setSection('section');
-        $this->model->setGroups(['1' => ['fields' => ['key' => ['data']]]]);
+        $this->_model->setWebsite('website');
+        $this->_model->setSection('section');
+        $this->_model->setGroups(['1' => ['fields' => ['key' => ['data']]]]);
 
         $backendModel = $this->createPartialMock(
-            Value::class,
+            \Magento\Framework\App\Config\Value::class,
             ['setPath', 'addData', '__sleep', '__wakeup']
         );
-        $backendModel->method('addData')
+        $backendModel->expects($this->once())
+            ->method('addData')
             ->with([
                 'field' => 'key',
                 'groups' => [1 => ['fields' => ['key' => ['data']]]],
                 'group_id' => null,
                 'scope' => 'websites',
-                'scope_id' => 1,
+                'scope_id' => 0,
                 'scope_code' => 'website_code',
                 'field_config' => null,
                 'fieldset_data' => ['key' => null],
@@ -347,19 +278,18 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
         $backendModel->expects($this->once())
             ->method('setPath')
             ->with('section/1/key')
-            ->willReturn($backendModel);
+            ->will($this->returnValue($backendModel));
 
-        $this->dataFactoryMock->method('create')
-            ->willReturn($backendModel);
+        $this->_dataFactoryMock->expects($this->any())->method('create')->will($this->returnValue($backendModel));
 
-        $this->model->save();
+        $this->_model->save();
     }
 
     public function testSetDataByPath()
     {
         $value = 'value';
         $path = '<section>/<group>/<field>';
-        $this->model->setDataByPath($path, $value);
+        $this->_model->setDataByPath($path, $value);
         $expected = [
             'section' => '<section>',
             'groups' => [
@@ -370,7 +300,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
                 ],
             ],
         ];
-        $this->assertSame($expected, $this->model->getData());
+        $this->assertSame($expected, $this->_model->getData());
     }
 
     /**
@@ -379,7 +309,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
      */
     public function testSetDataByPathEmpty()
     {
-        $this->model->setDataByPath('', 'value');
+        $this->_model->setDataByPath('', 'value');
     }
 
     /**
@@ -394,7 +324,7 @@ class ConfigTest extends \PHPUnit\Framework\TestCase
         $this->expectException('\UnexpectedValueException');
         $this->expectExceptionMessage($expectedException);
         $value = 'value';
-        $this->model->setDataByPath($path, $value);
+        $this->_model->setDataByPath($path, $value);
     }
 
     /**

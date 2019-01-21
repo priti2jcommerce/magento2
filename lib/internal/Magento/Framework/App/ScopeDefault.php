@@ -17,7 +17,7 @@ class ScopeDefault implements ScopeInterface
      */
     public function getCode()
     {
-        return '';
+        return 'default';
     }
 
     /**
@@ -27,7 +27,7 @@ class ScopeDefault implements ScopeInterface
      */
     public function getId()
     {
-        return 0;
+        return 1;
     }
 
     /**

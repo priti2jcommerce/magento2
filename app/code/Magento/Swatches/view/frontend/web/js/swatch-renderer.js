@@ -1030,8 +1030,12 @@ define([
             _.each(allowedProducts, function (allowedProduct) {
                 optionFinalPrice = parseFloat(optionPrices[allowedProduct].finalPrice.amount);
 
-                if (_.isEmpty(product) || optionFinalPrice < optionMinPrice) {
+                if (_.isEmpty(product)) {
                     optionMinPrice = optionFinalPrice;
+                    product = allowedProduct;
+                }
+
+                if (optionFinalPrice < optionMinPrice) {
                     product = allowedProduct;
                 }
             }, this);

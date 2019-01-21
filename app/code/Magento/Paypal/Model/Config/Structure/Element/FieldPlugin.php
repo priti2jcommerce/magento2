@@ -5,6 +5,7 @@
  */
 namespace Magento\Paypal\Model\Config\Structure\Element;
 
+use Magento\Framework\App\RequestInterface;
 use Magento\Config\Model\Config\Structure\Element\Field as FieldConfigStructure;
 use Magento\Paypal\Model\Config\StructurePlugin as ConfigStructurePlugin;
 
@@ -14,6 +15,19 @@ use Magento\Paypal\Model\Config\StructurePlugin as ConfigStructurePlugin;
 class FieldPlugin
 {
     /**
+     * @var RequestInterface
+     */
+    private $request;
+
+    /**
+     * @param RequestInterface $request
+     */
+    public function __construct(RequestInterface $request)
+    {
+        $this->request = $request;
+    }
+
+    /**
      * Get original configPath (not changed by PayPal configuration inheritance)
      *
      * @param FieldConfigStructure $subject
@@ -22,7 +36,7 @@ class FieldPlugin
      */
     public function afterGetConfigPath(FieldConfigStructure $subject, $result)
     {
-        if (!$result && strpos($subject->getPath(), 'payment_') === 0) {
+        if (!$result && $this->request->getParam('section') == 'payment') {
             $result = preg_replace(
                 '@^(' . implode('|', ConfigStructurePlugin::getPaypalConfigCountries(true)) . ')/@',
                 'payment/',

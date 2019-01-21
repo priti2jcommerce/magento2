@@ -60,7 +60,18 @@ class DefaultRendererTest extends \PHPUnit\Framework\TestCase
             ->setMethods(['setItem', 'toHtml'])
             ->getMock();
 
-        $this->itemMock = $this->createMock(\Magento\Sales\Model\Order\Item::class);
+        $itemMockMethods = [
+            '__wakeup',
+            'getRowTotal',
+            'getTaxAmount',
+            'getDiscountAmount',
+            'getDiscountTaxCompensationAmount',
+            'getWeeeTaxAppliedRowAmount',
+        ];
+        $this->itemMock = $this->getMockBuilder(\Magento\Sales\Model\Order\Item::class)
+            ->disableOriginalConstructor()
+            ->setMethods($itemMockMethods)
+            ->getMock();
     }
 
     public function testGetItemPriceHtml()
@@ -149,21 +160,5 @@ class DefaultRendererTest extends \PHPUnit\Framework\TestCase
             ->will($this->returnValue($weeeTaxAppliedRowAmount));
 
         $this->assertEquals($expectedResult, $this->block->getTotalAmount($this->itemMock));
-    }
-
-    /**
-     * @return void
-     */
-    public function testGetBaseTotalAmount()
-    {
-        $expectedBaseTotalAmount = 10;
-
-        $this->itemMock->expects($this->once())->method('getBaseRowTotal')->willReturn(8);
-        $this->itemMock->expects($this->once())->method('getBaseTaxAmount')->willReturn(1);
-        $this->itemMock->expects($this->once())->method('getBaseDiscountTaxCompensationAmount')->willReturn(1);
-        $this->itemMock->expects($this->once())->method('getBaseWeeeTaxAppliedAmount')->willReturn(1);
-        $this->itemMock->expects($this->once())->method('getBaseDiscountAmount')->willReturn(1);
-
-        $this->assertEquals($expectedBaseTotalAmount, $this->block->getBaseTotalAmount($this->itemMock));
     }
 }
